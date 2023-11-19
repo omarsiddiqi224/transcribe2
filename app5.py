@@ -8,28 +8,47 @@ from langchain.chains import LLMChain
 from langchain.llms import OpenAI
 #import whisper
 import os
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoTokenizer
 import torch
 
 from langchain.llms import CTransformers
 from langchain import PromptTemplate, LLMChain
 
-local_llm = "zephyr-7b-alpha.Q8_0.gguf"
+local_llm = "zephyr-7b-beta.Q5_K_M.gguf"
 
 config = {
-    "max_new_tokens": 1024,
+    "max_new_tokens": 2000,
     "repetition_penalty": 1.1,
     "temperature": 0.5,
     "top_k": 50,
     "top_p": 0.9
 }
 
+from ctransformers import AutoConfig
+
+#config = AutoConfig.from_pretrained("TheBloke/zephyr-7B-beta-GGUF")
+#config.config.max_new_tokens = 2000
+#config.config.context_length = 4000
+
+from ctransformers import AutoModelForCausalLM
+#llm = AutoModelForCausalLM.from_pretrained("TheBloke/zephyr-7B-beta-GGUF", model_file="zephyr-7b-beta.Q4_K_M.gguf", model_type="mistral", gpu_layers=50)
+
+
 llm_init = CTransformers(
     model=local_llm,
     model_type="zephyr",
     lib="avx2",
     **config
+    
 )
+
+
+#llm = AutoModelForCausalLM.from_pretrained("TheBloke/zephyr-7B-beta-GGUF",
+#                                           model_file="zephyr-7b-beta.Q5_K_M.gguf",
+#                                           model_type="mistral",
+#                                           gpu_layers=50,
+#                                           max_new_tokens = 1000,
+#                                           context_length = 6000)
 
 #pipe = pipeline("text-generation", model="HuggingFaceH4/zephyr-7b-beta")
 transcriber = pipeline("automatic-speech-recognition", model="openai/whisper-base.en")
@@ -54,8 +73,9 @@ def read_file_content(filename):
         return file.read()
         
 
-def summarize(transcribed_text):
+def summarize2(transcribed_text):
     print("before prompt")
+    data = {"context": transcribed_text}
     prompt_template = """Based on the provided conversation, your task is to summarize the key findings and derive insights. Please create a thorough summary note under the heading 'SUMMARY KEY NOTES' and include bullet points about the key items discussed.
     Ensure that your summary is clear and informative, conveying all necessary information (include how the caller was feeling, meaning sentiment analysis). Focus on the main points mentioned in the conversation, such as Claims, Benefits, Providers, and other relevant topics. Additionally, create an action items/to-do list based on the insights and findings from the conversation.
     The main points to look for in a conversation are: Claims, Correspondence and Documents, Eligibility & Benefits, Financials, Grievance & Appeal, Letters, Manage Language, Accumulators, CGHP & Spending Account Buy Up, Group Search, Member Enrollment & Billing, Manage ID Cards, Member Limited Liability, Member Maintenance, Other Health insurance (COB), Provider Lookup, Search/ Update UM Authorization, Prefix and Inter Plan Search, Promised Action Search Inventory.
@@ -115,54 +135,9 @@ def summarize(transcribed_text):
     
     return summarizing
 
-def summarize(transcribed_text):
+def summarize3(transcribed_text):
     data = {"context": transcribed_text}
-    prompt_template = f"""Summarize the following transcription based on the key finding and derive insights from the conversation. And populate the summarized note under heading 'SUMMARY KEY NOTES'. Under 'SUMMARY KEY NOTES' create bullet point about the key items that were talked about.
-                        Be Terse and not verbose. However, make sure you convey all the information needed
-                        Based on above conversation the summary, extract insights and action items. For example, based on a Healthcare insurance conversation, where they talked about Claims, Benefits, and Providers, this would be a sample output:
-                        Claims Service request
-                            Service request notes:
-                            Claim for 'Member' was denied as mentiond 'service' is not covered for Out of network provider.
-
-                        Benefit Service request
-                            Service request notes:
-                            'service' for 'Member' is not included in his/her benefits for out of network providers.
-
-                        Provider Service request
-                            Service request notes:
-                            'Provider' who was in- network for 'Member' got his network updated and id currently OON for 'member'.
-
-                        The main points to look for in the conversation are:
-
-                        Claims
-                        Correspondence and Documents
-                        Eligibility & Benefits
-                        Financials
-                        Grievance & Appeal
-                        Letters
-                        Manage Language
-                        Accumulators
-                        CGHP & Spending Account Buy Up
-                        Group Search
-                        Member Enrollment & Billing
-                        Manage ID Cards
-                        Member Limited Liability
-                        Member Maintenance
-                        Other Health insurance (COB)
-                        Provider Lookup
-                        Search/ Update UM Authorization
-                        Prefix and Inter Plan Search
-                        Promised Action
-                        Search Inventory
-
-                        You can look for other points, however look for these first.
-                        Once you create the Summary Key points, create an Action Items / To-Do list:
-
-                        Here is the transcript for the conversation: {{context}}
-
-                        ""
-                        """
-    prompt_template = """Based on the provided conversation, your task is to summarize the key findings and derive insights. Please create a thorough summary note under the heading 'SUMMARY KEY NOTES' and include bullet points about the key items discussed.
+    prompt_template = f"""Based on the provided conversation, your task is to summarize the key findings and derive insights. Please create a thorough summary note under the heading 'SUMMARY KEY NOTES' and include bullet points about the key items discussed.
     Ensure that your summary is clear and informative, conveying all necessary information (include how the caller was feeling, meaning sentiment analysis). Focus on the main points mentioned in the conversation, such as Claims, Benefits, Providers, and other relevant topics. Additionally, create an action items/to-do list based on the insights and findings from the conversation.
     The main points to look for in a conversation are: Claims, Correspondence and Documents, Eligibility & Benefits, Financials, Grievance & Appeal, Letters, Manage Language, Accumulators, CGHP & Spending Account Buy Up, Group Search, Member Enrollment & Billing, Manage ID Cards, Member Limited Liability, Member Maintenance, Other Health insurance (COB), Provider Lookup, Search/ Update UM Authorization, Prefix and Inter Plan Search, Promised Action Search Inventory.
     Please note that while you can look for other points, it is important to prioritize the main points mentioned above.
@@ -191,10 +166,26 @@ def summarize(transcribed_text):
         
         """
 
-
-
-
     prompt = PromptTemplate(input_variables=["context"], template=prompt_template)
+    llm_chain = LLMChain(prompt=prompt, llm=llm_init, verbose=True)
+    text = llm_chain.run(prompt)
+    return text
+
+
+def summarize(transcribed_text):
+    
+    #data = {"context": transcribed_text}
+    #prompt_template = f""" What is 2+2"""
+    prompt_template = """ You are a calculator. answer the question
+        question: {context}
+        """
+    
+    prompt = PromptTemplate(template=prompt_template, input_variables=['context'])
+    llm_chain = LLMChain(prompt=prompt, llm=llm_init, verbose=True)
+    text = llm_chain.run(prompt)
+    return text
+
+
 
 transcripts = ""
 def transcribe2(audio_file):
