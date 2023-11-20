@@ -11,8 +11,8 @@ import os
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
 
-
-pipe = pipeline("text-generation", model="HuggingFaceH4/zephyr-7b-beta")
+pipe = pipeline("text-generation", model="HuggingFaceH4/zephyr-7b-beta", torch_dtype=torch.bfloat16, device="cuda")
+#pipe = pipeline("text-generation", model="HuggingFaceH4/zephyr-7b-beta")
 transcriber = pipeline("automatic-speech-recognition", model="openai/whisper-base.en")
  
 
