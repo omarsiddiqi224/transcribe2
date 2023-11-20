@@ -10,7 +10,7 @@ from deepmultilingualpunctuation import PunctuationModel
 import re
 import logging
 
-mtypes = {"cpu": "int8", "cuda": "float16"}
+mtypes = {"cuda": "bfloat16"}
 
 # Initialize parser
 parser = argparse.ArgumentParser()
@@ -45,7 +45,7 @@ parser.add_argument(
 parser.add_argument(
     "--device",
     dest="device",
-    default="cuda" if torch.cuda.is_available() else "cpu",
+    default="cuda",
     help="if you have a GPU use 'cuda', otherwise 'cpu'",
 )
 
