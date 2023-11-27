@@ -10,7 +10,8 @@ from deepmultilingualpunctuation import PunctuationModel
 import re
 import logging
 
-mtypes = {"cuda": "bfloat16"}
+#mtypes = {"cuda": "bfloat16"}
+mtypes = {"cpu": "int8", "cuda": "float16"}
 
 # Initialize parser
 parser = argparse.ArgumentParser()
@@ -42,10 +43,17 @@ parser.add_argument(
     help="name of the Whisper model to use",
 )
 
+#parser.add_argument(
+#    "--device",
+#   dest="device",
+#    default="cuda",
+#    help="if you have a GPU use 'cuda', otherwise 'cpu'",
+#)
+
 parser.add_argument(
     "--device",
     dest="device",
-    default="cuda",
+    default="cuda" if torch.cuda.is_available() else "cpu",
     help="if you have a GPU use 'cuda', otherwise 'cpu'",
 )
 
