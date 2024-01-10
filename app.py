@@ -7,7 +7,6 @@ from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
 from langchain.llms import OpenAI
 #import whisper
-
 import os
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
